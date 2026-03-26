@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For You, Guddiya</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --primary-pink: #ec4899;
+            --primary-red: #ef4444;
+            --glass: rgba(15, 12, 12, 0.65);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #0c0a09;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .serif { font-family: 'Playfair Display', serif; }
+
+        /* Aurora Background */
+        .aurora-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            filter: blur(100px);
+            opacity: 0.8;
+        }
+
+        .aurora {
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            top: -25%;
+            left: -25%;
+            background: 
+                radial-gradient(circle at 20% 30%, hsla(333,70%,55%,.4) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, hsla(282, 82%, 54%, .3) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, hsla(210, 89%, 60%, .3) 0%, transparent 50%),
+                radial-gradient(circle at 10% 80%, hsla(35, 90%, 60%, .3) 0%, transparent 50%);
+            animation: aurora-flow 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes aurora-flow {
+            0% { transform: rotate(0deg) scale(1); }
+            100% { transform: rotate(10deg) scale(1.1); }
+        }
+
+        /* Glassmorphism */
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 2rem;
+            transition: transform 0.3s ease;
+        }
+
+        /* Typography */
+        .text-gradient {
+            background: linear-gradient(to right, #ff9eb5, #ffffff, #ff9eb5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% auto;
+            animation: shine 5s linear infinite;
+        }
+
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 20%;
+            background: linear-gradient(to right, var(--primary-pink), var(--primary-red));
+            border-radius: 10px;
+            box-shadow: 0 0 15px var(--primary-pink);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Buttons */
+        .btn-pookie {
+            background: linear-gradient(135deg, var(--primary-pink), var(--primary-red));
+            box-shadow: 0 10px 20px -5px rgba(236, 72, 153, 0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-pookie:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(236, 72, 153, 0.7);
+        }
+
+        .btn-pookie:active { transform: scale(0.95); }
+
+        /* Polaroid Effect */
+        .polaroid-wrapper {
+            perspective: 1000px;
+        }
+        .polaroid {
+            background: white;
+            padding: 1rem 1rem 3rem 1rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            transform: rotate(-3deg);
+            transition: transform 0.1s ease-out;
+        }
+        .polaroid img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            filter: sepia(0.2);
+        }
+        .polaroid span {
+            font-family: 'Playfair Display', serif;
+            color: #333;
+            display: block;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+
+        /* Steps */
+        .step {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .step.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .heart-emoji {
+            font-size: 4rem;
+            animation: pulse 2s infinite;
+            filter: drop-shadow(0 0 20px rgba(236, 72, 153, 0.6));
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        canvas#three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="three-canvas"></canvas>
+    
+    <div class="aurora-container">
+        <div class="aurora"></div>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <main id="journey">
+        <!-- Step 1 -->
+        <section class="step active" id="step1">
+            <div class="glass-card p-8 md:p-12 text-center">
+                <div class="heart-emoji mb-6">❤️</div>
+                <h1 class="serif text-4xl md:text-6xl text-gradient mb-4">Hey Beautiful,</h1>
+                <p class="text-gray-300 text-lg mb-8 leading-relaxed">I built a little world for you, just to say sorry and Apologize my mistake.</p>
+                <button onclick="nextStep(2)" class="btn-pookie px-8 py-4 rounded-full text-white font-bold text-lg">Let's Begin</button>
+            </div>
+        </section>
+
+        <!-- Step 2 -->
+        <section class="step" id="step2">
+            <div class="glass-card p-8 md:p-12 text-center">
+                <div class="text-6xl mb-6">☹️</div>
+                <h1 class="serif text-4xl md:text-5xl text-gradient mb-4">Sorry Guddiya</h1>
+                <p class="text-gray-300 text-lg mb-8 leading-relaxed italic">
+                    "Guddiya ji sorry g aap to sherni ho n, Angry billi bhi ho bhai gussa to naak pr hi rhta hai cutie g ke."
+                </p>
+                <button onclick="nextStep(3)" class="btn-pookie px-8 py-4 rounded-full text-white font-bold text-lg">There's more...</button>
+            </div>
+        </section>
+
+        <!-- Step 3 -->
+        <section class="step" id="step3">
+            <div class="glass-card p-6 md:p-10 w-full max-w-4xl">
+                <h1 class="serif text-3xl md:text-4xl text-gradient mb-8 text-center">A Few Things I Adore About You</h1>
+                <div class="bento-grid">
+                    <div class="col-span-2 bg-white/5 p-6 rounded-3xl border border-white/10">
+                        <h3 class="text-pink-400 font-bold mb-2">✨ Your Unmatched cuteness</h3>
+                        <p class="text-sm text-gray-300">Cutieeeeeee to etni ho n billi yrr gusse mei bhi koi Angel se km ni lgti ho .</p>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-3xl border border-white/10">
+                        <h3 class="text-pink-400 font-bold mb-2">😊 That Smile</h3>
+                        <p class="text-sm text-gray-300">AAYEhaayee, It's a work of art.</p>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-3xl border border-white/10">
+                        <h3 class="text-pink-400 font-bold mb-2">🌟 Radiant Spirit</h3>
+                        <p class="text-sm text-gray-300">Are you a magician? Because when you smile, everything else disappears.</p>
+                    </div>
+                </div>
+                <div class="text-center mt-8">
+                    <button onclick="nextStep(4)" class="btn-pookie px-8 py-4 rounded-full text-white font-bold text-lg">Remember this?</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 4 -->
+        <section class="step" id="step4">
+            <div class="glass-card p-8 md:p-12 text-center">
+                <h1 class="serif text-3xl md:text-4xl text-gradient mb-8">That One Time...</h1>
+                <div class="polaroid-wrapper flex justify-center mb-8">
+                    <div class="polaroid" id="polaroid">
+                        <img src="https://i.ibb.co/XZX1XKZt/IMG-20251216-WA0015.jpg" alt="Memory">
+                        <span>Our favorite memory.</span>
+                    </div>
+                </div>
+                <p class="text-gray-300 text-lg mb-8 leading-relaxed">
+                    Every moment with you feels like a scene from a movie I'd watch on repeat itti.
+                </p>
+                <button onclick="nextStep(5)" class="btn-pookie px-8 py-4 rounded-full text-white font-bold text-lg">One last thing...</button>
+            </div>
+        </section>
+
+        <!-- Step 5 -->
+        <section class="step" id="step5">
+            <div class="glass-card p-8 md:p-12 text-center">
+                <div class="text-6xl mb-6">🎀</div>
+                <h1 class="serif text-3xl md:text-5xl text-gradient mb-4">I know I made a mistake</h1>
+                <p class="text-gray-300 text-lg mb-8 leading-relaxed">
+                    but losing you would be the biggest one. I'm really sorry. If this website made you smile even a little… please forgive me, Paariiii.
+                </p>
+                <div id="final-container">
+                    <button id="finaleBtn" onclick="startFinale()" class="btn-pookie px-12 py-5 rounded-full text-white font-bold text-xl">Guddiyaaa!</button>
+                    <h2 id="finalText" class="serif text-3xl md:text-5xl text-white mt-8 hidden opacity-0">Sorry my pookieee sookiee! ❤️</h2>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- THREE.JS HEARTS ---
+        const canvas = document.querySelector('#three-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const hearts = [];
+        const heartShape = new THREE.Shape();
+        heartShape.moveTo(0, 0);
+        heartShape.bezierCurveTo(0, 0.5, 0.5, 1, 1, 1);
+        heartShape.bezierCurveTo(2, 1, 2, 0, 1, -1);
+        heartShape.lineTo(0, -2);
+        heartShape.lineTo(-1, -1);
+        heartShape.bezierCurveTo(-2, 0, -2, 1, -1, 1);
+        heartShape.bezierCurveTo(-0.5, 1, 0, 0.5, 0, 0);
+
+        const geometry = new THREE.ExtrudeGeometry(heartShape, { depth: 0.4, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.2 });
+        const material = new THREE.MeshPhongMaterial({ color: 0xec4899, shininess: 100 });
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
+
+        for (let i = 0; i < 25; i++) {
+            const heart = new THREE.Mesh(geometry, material);
+            heart.position.set(
+                (Math.random() - 0.5) * 30,
+                (Math.random() - 0.5) * 30,
+                (Math.random() - 0.5) * 20 - 10
+            );
+            heart.rotation.x = Math.PI;
+            heart.scale.set(0.5, 0.5, 0.5);
+            heart.userData = {
+                speedX: (Math.random() - 0.5) * 0.01,
+                speedY: (Math.random() - 0.5) * 0.01,
+                rotateSpeed: Math.random() * 0.02
+            };
+            scene.add(heart);
+            hearts.push(heart);
+        }
+
+        camera.position.z = 15;
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+            hearts.forEach(h => {
+                h.position.y += Math.sin(Date.now() * 0.001 + h.position.x) * 0.005;
+                h.position.x += h.userData.speedX;
+                h.rotation.y += h.userData.rotateSpeed;
+            });
+            renderer.render(scene, camera);
+        }
+        animateThree();
+
+        // --- NAVIGATION LOGIC ---
+        let currentStepNum = 1;
+        const totalSteps = 5;
+
+        function nextStep(stepNum) {
+            const prevStep = document.querySelector(`#step${currentStepNum}`);
+            const nextStep = document.querySelector(`#step${stepNum}`);
+            
+            gsap.to(prevStep, {
+                opacity: 0,
+                y: -50,
+                scale: 0.9,
+                duration: 0.8,
+                ease: "power3.inOut",
+                onComplete: () => {
+                    prevStep.classList.remove('active');
+                    nextStep.classList.add('active');
+                    gsap.fromTo(nextStep, 
+                        { opacity: 0, y: 50, scale: 1.1 },
+                        { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }
+                    );
+                }
+            });
+
+            currentStepNum = stepNum;
+            document.getElementById('progressBar').style.width = `${(stepNum / totalSteps) * 100}%`;
+        }
+
+        // --- POLAROID TILT ---
+        const polaroid = document.getElementById('polaroid');
+        document.addEventListener('mousemove', (e) => {
+            if (currentStepNum === 4) {
+                const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+                const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+                polaroid.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg) rotateZ(-3deg)`;
+            }
+        });
+
+        // --- FINALE ---
+        function startFinale() {
+            const btn = document.getElementById('finaleBtn');
+            const finalText = document.getElementById('finalText');
+            
+            gsap.to(btn, { opacity: 0, scale: 0, duration: 0.5, onComplete: () => btn.style.display = 'none' });
+            
+            finalText.classList.remove('hidden');
+            gsap.to(finalText, { opacity: 1, y: -20, duration: 1.5, delay: 0.5, ease: "power4.out" });
+
+            // Confetti
+            const duration = 5 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+
+                const particleCount = 50 * (timeLeft / duration);
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+                
+                // Emoji confetti
+                confetti({
+                    particleCount: 2,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    shapes: ['heart'],
+                    colors: ['#ff0000', '#ff69b4']
+                });
+            }, 250);
+
+            // Three.js Hearts Fly Away
+            hearts.forEach((h, i) => {
+                gsap.to(h.position, {
+                    y: 50,
+                    x: (Math.random() - 0.5) * 100,
+                    z: 20,
+                    duration: 3,
+                    delay: i * 0.05,
+                    ease: "power2.in"
+                });
+                gsap.to(h.material, { opacity: 0, duration: 3 });
+            });
+        }
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
